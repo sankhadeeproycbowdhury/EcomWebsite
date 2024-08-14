@@ -11,7 +11,7 @@ router = APIRouter(
 
 @router.get("/", response_model= List[schemas.responsePost] )
 def get_post(curr_user : dict=Depends(Oauth2.get_current_user), limit : int=5, skip : int=0, search : Optional[str] = ""):
-    database.cur.execute("SELECT posts.*,users.email FROM posts JOIN users ON users.id = posts.user_id WHERE published = true AND title ILIKE %s LIMIT %s OFFSET %s ",
+    database.cur.execute("SELECT posts.*, users.email as owner, COUNT(likes.post_id) AS likes FROM posts JOIN users ON posts.user_id = users.id LEFT JOIN likes ON posts.id = likes.post_id WHERE posts.published = true AND title ILIKE %s GROUP BY posts.id, users.email LIMIT %s OFFSET %s",
     ('%'+search+'%',limit,skip))
     post = database.cur.fetchall()
 
@@ -20,7 +20,7 @@ def get_post(curr_user : dict=Depends(Oauth2.get_current_user), limit : int=5, s
 
 @router.get("/{id}", response_model=schemas.responsePost)
 def get_post(id : int, curr_user : dict = Depends(Oauth2.get_current_user)):
-    database.cur.execute("SELECT posts.*,users.email FROM posts JOIN users ON users.id = posts.user_id WHERE  posts.id = %s AND published = true", (str(id),))
+    database.cur.execute("SELECT posts.*, users.email as owner, COUNT(likes.post_id) AS likes FROM posts JOIN users ON posts.user_id = users.id LEFT JOIN likes ON posts.id = likes.post_id WHERE posts.published = true AND posts.id = %s GROUP BY posts.id, users.email", (str(id),))
     res = database.cur.fetchone()
     if res != None:
         return res
@@ -37,7 +37,7 @@ def create_post(post : schemas.Post, curr_user : dict = Depends(Oauth2.get_curre
 
     database.cur.execute("SELECT email FROM users WHERE id = %s", (curr_user['id'],))
     email = database.cur.fetchone()
-    new_post['email'] = email['email']
+    new_post['creator'] = email['email']
 
     return new_post
 
@@ -70,7 +70,7 @@ def update_post(id : int, post : schemas.updatePost, curr_user : dict = Depends(
 
         database.cur.execute("SELECT email FROM users WHERE id = %s", (curr_user['id'],))
         email = database.cur.fetchone()
-        updated_post['email'] = email['email']
+        updated_post['creator'] = email['email']
         
         return updated_post
 

@@ -25,8 +25,8 @@ class responsePost(BaseModel):
     title : str
     content : str
     created_at : datetime
-    user_id : int
-    email : EmailStr
+    owner : EmailStr
+    likes : int
 
 
 class createPost(BaseModel):
@@ -35,8 +35,7 @@ class createPost(BaseModel):
     content : str
     published : bool
     created_at : datetime
-    user_id : int
-    email : EmailStr
+    creator : EmailStr
     
 
 
